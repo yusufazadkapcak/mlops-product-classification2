@@ -1,0 +1,52 @@
+name: Deploy Model
+
+on:
+  workflow_dispatch:  # Manual trigger
+  workflow_run:
+    workflows: ["Train Model"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub (optional)
+      if: env.DOCKER_USERNAME != ''
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build inference Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./docker/Dockerfile.inference
+        push: false
+        tags: product-classifier:latest
+        cache-from: type=registry,ref=product-classifier:cache
+        cache-to: type=inline
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm -d --name test-api -p 8000:8000 product-classifier:latest
+        sleep 10
+        curl -f http://localhost:8000/health || exit 1
+        docker stop test-api
+    
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: docker-image
+        path: |
+          docker/
+        retention-days: 7
+

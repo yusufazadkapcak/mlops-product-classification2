@@ -1,0 +1,26 @@
+tracking:
+  uri: http://localhost:5000
+  registry:
+    uri: http://localhost:5000
+    artifact_location: ./artifacts
+  experiment:
+    name: "Product Classification"
+    tags:
+      - key: "version"
+        value: "1.0"
+      - key: "team"
+        value: "data-science"
+  model:
+    tracking_uri: http://localhost:5000
+    artifact_location: ./artifacts/models
+    default_artifact_root: ./artifacts/models
+  server:
+    host: "0.0.0.0"
+    port: 5000
+    enable_api: true
+    enable_ui: true
+    enable_artifacts: true
+    enable_metrics: true
+    enable_models: true
+    enable_experiments: true
+    enable_runs: true

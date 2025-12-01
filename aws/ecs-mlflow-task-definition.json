@@ -1,0 +1,48 @@
+{
+  "family": "mlflow-server",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "mlflow",
+      "image": "python:3.10-slim",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "MLFLOW_BACKEND_STORE_URI",
+          "value": "file:./mlruns"
+        },
+        {
+          "name": "MLFLOW_DEFAULT_ARTIFACT_ROOT",
+          "value": "s3://YOUR_BUCKET_NAME/mlflow-artifacts"
+        },
+        {
+          "name": "AWS_DEFAULT_REGION",
+          "value": "us-east-1"
+        }
+      ],
+      "command": [
+        "sh",
+        "-c",
+        "pip install mlflow boto3 && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri file:./mlruns --default-artifact-root s3://YOUR_BUCKET_NAME/mlflow-artifacts"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/mlflow-server",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+

@@ -1,0 +1,23 @@
+{
+  "AWSEBDockerrunVersion": "single",
+  "Image": {
+    "Name": "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/product-classifier:latest",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "8000"
+    }
+  ],
+  "Environment": [
+    {
+      "Name": "MLFLOW_TRACKING_URI",
+      "Value": "http://your-mlflow-endpoint:5000"
+    },
+    {
+      "Name": "PORT",
+      "Value": "8000"
+    }
+  ]
+}
+

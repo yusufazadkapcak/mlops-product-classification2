@@ -1,0 +1,28 @@
+stages:
+  - name: prepare
+    cmd: python src/data_prep.py
+    deps:
+      - data/raw/
+    outs:
+      - data/processed/
+  
+  - name: feature_engineering
+    cmd: python src/feature_engineering.py
+    deps:
+      - data/processed/
+    outs:
+      - data/processed/features/
+
+  - name: train
+    cmd: python src/train.py
+    deps:
+      - data/processed/features/
+    outs:
+      - models/model.pkl
+
+  - name: serve
+    cmd: python src/serve.py
+    deps:
+      - models/model.pkl
+    outs:
+      - predictions/

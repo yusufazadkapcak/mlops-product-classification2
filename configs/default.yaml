@@ -1,0 +1,37 @@
+# Contents of /mlops-product-classification/mlops-product-classification/configs/default.yaml
+
+model:
+  name: "product_classifier"
+  version: "1.0"
+  type: "classification"
+  metrics:
+    accuracy: true
+    precision: true
+    recall: true
+    f1_score: true
+
+data:
+  raw_data_path: null  # Will auto-detect CSV files in data/raw/ or generate sample data
+  processed_data_path: "data/processed/"
+  interim_data_path: "data/interim/"
+  external_data_path: "data/external/"
+
+features:
+  feature_selection:
+    method: "recursive_feature_elimination"
+    n_features_to_select: 10
+
+training:
+  test_size: 0.2
+  random_seed: 42
+  n_estimators: 100
+  max_depth: 10
+  learning_rate: 0.01
+
+mlflow:
+  tracking_uri: "file:./mlruns"  # File-based tracking (no server needed)
+  experiment_name: "product_classification"
+
+prefect:
+  flow_name: "product_classification_pipeline"
+  log_level: "INFO"
