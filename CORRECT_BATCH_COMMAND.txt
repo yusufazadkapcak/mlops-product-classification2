@@ -1,0 +1,76 @@
+========================================
+CORRECT COMMANDS FOR BATCH PREDICTION
+========================================
+
+❌ WRONG - Don't mix PowerShell with curl:
+--------------------------------------------------------
+curl -d '$batch = @{ ... } | ConvertTo-Json'
+(This won't work - curl doesn't understand PowerShell!)
+
+✅ CORRECT OPTION 1 - Use PowerShell (EASIEST):
+--------------------------------------------------------
+$batch = @(
+    @{
+        title = "iPhone 15 Pro Max 256GB Space Black"
+        price = 1199.99
+        brand = "Apple"
+        subcategory = "Electronics"
+        rating = 4.8
+        reviews_count = 12500
+    },
+    @{
+        title = "Nike Air Max Shoes"
+        price = 129.99
+        brand = "Nike"
+        subcategory = "Clothing"
+    }
+) | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict/batch" -Method Post -Body $batch -ContentType "application/json"
+
+✅ CORRECT OPTION 2 - Use curl with proper JSON:
+--------------------------------------------------------
+curl -X POST "http://127.0.0.1:8000/predict/batch" ^
+  -H "accept: application/json" ^
+  -H "Content-Type: application/json" ^
+  -d "[{\"title\":\"iPhone 15 Pro Max 256GB Space Black\",\"price\":1199.99,\"brand\":\"Apple\",\"subcategory\":\"Electronics\",\"rating\":4.8,\"reviews_count\":12500},{\"title\":\"Nike Air Max Shoes\",\"price\":129.99,\"brand\":\"Nike\",\"subcategory\":\"Clothing\"}]"
+
+✅ CORRECT OPTION 3 - One-liner PowerShell:
+--------------------------------------------------------
+$batch = '[{"title":"iPhone 15 Pro Max","price":1199.99,"brand":"Apple","subcategory":"Electronics"},{"title":"Nike Shoes","price":129.99,"brand":"Nike","subcategory":"Clothing"}]'; Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict/batch" -Method Post -Body $batch -ContentType "application/json"
+
+========================================
+EXPECTED RESPONSE:
+========================================
+{
+  "predictions": [
+    {
+      "category": "Electronics",
+      "confidence": 0.9245,
+      "probabilities": {
+        "Electronics": 0.9245,
+        "Clothing": 0.0234,
+        "Home & Kitchen": 0.0156,
+        ...
+      }
+    },
+    {
+      "category": "Clothing",
+      "confidence": 0.8567,
+      "probabilities": {
+        "Clothing": 0.8567,
+        "Sports & Outdoors": 0.0892,
+        ...
+      }
+    }
+  ],
+  "total_processed": 2,
+  "processing_time_ms": 45.2
+}
+
+========================================
+QUICKEST WAY - Just run this script:
+========================================
+.\test_batch.ps1
+
+

@@ -1,0 +1,143 @@
+========================================
+API Test Example
+========================================
+
+Example 1: Health Check
+Request: GET http://127.0.0.1:8000/health
+
+Response:
+{
+  "status": "healthy",
+  "model_loaded": true
+}
+
+----------------------------------------
+
+Example 2: Single Product Prediction
+Request: POST http://127.0.0.1:8000/predict
+
+Input Product:
+{
+  "title": "iPhone 15 Pro Max 256GB Space Black",
+  "price": 1199.99,
+  "brand": "Apple",
+  "subcategory": "Electronics",
+  "rating": 4.8,
+  "reviews_count": 12500
+}
+
+Response:
+{
+  "category": "Electronics",
+  "confidence": 0.9245,
+  "probabilities": {
+    "Electronics": 0.9245,
+    "Clothing": 0.0234,
+    "Home & Kitchen": 0.0156,
+    "Sports & Outdoors": 0.0123,
+    "Books": 0.0089,
+    "Toys & Games": 0.0056,
+    "Beauty": 0.0034,
+    "Automotive": 0.0023,
+    "Garden": 0.0012,
+    "Pet Supplies": 0.0008,
+    "Baby": 0.0004,
+    "Office": 0.0002
+  }
+}
+
+Summary:
+  Predicted Category: Electronics
+  Confidence: 92.45%
+
+  Top 3 Probabilities:
+    • Electronics: 92.45%
+    • Clothing: 2.34%
+    • Home & Kitchen: 1.56%
+
+----------------------------------------
+
+Example 3: Batch Prediction (Multiple Products)
+Request: POST http://127.0.0.1:8000/predict/batch
+
+Input Products (3 items):
+[
+  {
+    "title": "Nike Air Max 270 Running Shoes",
+    "price": 129.99,
+    "brand": "Nike",
+    "subcategory": "Clothing",
+    "rating": 4.6,
+    "reviews_count": 8500
+  },
+  {
+    "title": "Samsung 55-inch 4K QLED Smart TV",
+    "price": 899.99,
+    "brand": "Samsung",
+    "subcategory": "Electronics",
+    "rating": 4.7,
+    "reviews_count": 12000
+  },
+  {
+    "title": "KitchenAid Stand Mixer Professional",
+    "price": 449.99,
+    "brand": "KitchenAid",
+    "subcategory": "Home & Kitchen",
+    "rating": 4.9,
+    "reviews_count": 15000
+  }
+]
+
+Response:
+{
+  "predictions": [
+    {
+      "category": "Clothing",
+      "confidence": 0.8567,
+      "probabilities": {
+        "Clothing": 0.8567,
+        "Sports & Outdoors": 0.0892,
+        "Electronics": 0.0234,
+        "Home & Kitchen": 0.0123,
+        ...
+      }
+    },
+    {
+      "category": "Electronics",
+      "confidence": 0.9123,
+      "probabilities": {
+        "Electronics": 0.9123,
+        "Home & Kitchen": 0.0456,
+        "Clothing": 0.0123,
+        ...
+      }
+    },
+    {
+      "category": "Home & Kitchen",
+      "confidence": 0.8934,
+      "probabilities": {
+        "Home & Kitchen": 0.8934,
+        "Electronics": 0.0567,
+        "Clothing": 0.0234,
+        ...
+      }
+    }
+  ],
+  "total_processed": 3,
+  "processing_time_ms": 67.8
+}
+
+Summary:
+  Total Processed: 3
+  Processing Time: 67.8 ms
+
+  Predictions:
+    1. Clothing (confidence: 85.67%)
+    2. Electronics (confidence: 91.23%)
+    3. Home & Kitchen (confidence: 89.34%)
+
+========================================
+Example Complete!
+========================================
+
+
