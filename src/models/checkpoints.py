@@ -1,6 +1,5 @@
 """Checkpoints pattern for model resilience during training."""
 
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -185,7 +184,6 @@ def create_checkpoint_callback(
                     metrics[metric_name] = metric_value
 
             # Check if this is the best model
-            is_best = False
             if validation_metric in metrics:
                 current_score = metrics[validation_metric]
                 if (
@@ -194,7 +192,6 @@ def create_checkpoint_callback(
                 ):
                     checkpoint_manager.best_score = current_score
                     checkpoint_manager.best_iteration = iteration
-                    is_best = True
 
             # Save checkpoint (metadata will be saved separately)
             # Note: In actual implementation, we'd need to pass model and label_mapping

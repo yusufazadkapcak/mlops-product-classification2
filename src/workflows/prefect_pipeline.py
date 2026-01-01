@@ -10,11 +10,10 @@ from prefect import flow, task  # type: ignore
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import joblib
 
 # Import actual MLflow package
 import mlflow  # type: ignore
-from src.data.load import load_data, save_data
+from src.data.load import load_data
 from src.data.preprocess import preprocess_data, split_data
 from src.features.build_features import build_features
 from src.models.train import evaluate_model, train_model
@@ -109,7 +108,7 @@ def register_model_task(model_name: str = "product_classifier") -> None:
     print("Registering model in MLflow...")
     try:
         # Get the latest run
-        client = mlflow.tracking.MlflowClient()
+        mlflow.tracking.MlflowClient()
         experiment = mlflow.get_experiment_by_name("product_classification")
 
         if experiment:

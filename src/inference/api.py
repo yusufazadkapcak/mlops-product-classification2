@@ -135,7 +135,7 @@ def load_model(
                                 f"✓ Loaded reference data from training: {len(reference_data)} samples"
                             )
                         break
-                    except Exception as e:
+                    except Exception:
                         continue
 
             if reference_data is None:
@@ -288,7 +288,6 @@ async def predict(request: ProductRequest):
 
         # Design Pattern: Drift Detection
         use_fallback = False
-        drift_info = {}
 
         if drift_detector is not None:
             # Add to drift detection window
@@ -296,7 +295,6 @@ async def predict(request: ProductRequest):
 
             # Check for drift
             drift_result = drift_detector.detect_data_drift(features)
-            drift_info = drift_result
 
             if drift_result.get("drift_detected", False):
                 print(

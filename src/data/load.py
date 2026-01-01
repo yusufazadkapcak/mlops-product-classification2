@@ -1,7 +1,6 @@
 """Data loading utilities for e-commerce product classification."""
 
 import os
-import tempfile
 import urllib.request
 from pathlib import Path
 from typing import Optional

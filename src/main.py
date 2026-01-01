@@ -9,7 +9,6 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 os.environ["PYTHONPATH"] = str(project_root)
 
-import pandas as pd
 from sklearn.model_selection import train_test_split
 
 import mlflow  # type: ignore

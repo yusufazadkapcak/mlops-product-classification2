@@ -4,13 +4,10 @@ import sys
 import unittest
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-import lightgbm as lgb
 
 from src.data.load import generate_sample_data
 from src.data.preprocess import preprocess_data, split_data

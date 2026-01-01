@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 import joblib
 import lightgbm as lgb  # type: ignore
@@ -11,7 +11,6 @@ import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
-    confusion_matrix,
     f1_score,
     precision_score,
     recall_score,

@@ -2,7 +2,6 @@
 
 # Import the actual MLflow package (not the local module)
 import sys
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 # CRITICAL: Remove any local mlflow modules to prevent circular imports
