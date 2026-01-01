@@ -1,4 +1,5 @@
 """MLflow tracking utilities modules."""
+
 from src.tracking_utils.tracking import (
     setup_mlflow,
     start_run,
@@ -8,7 +9,7 @@ from src.tracking_utils.tracking import (
     log_metrics,
     log_model,
     end_run,
-    register_model
+    register_model,
 )
 
 __all__ = [
@@ -20,8 +21,5 @@ __all__ = [
     "log_metrics",
     "log_model",
     "end_run",
-    "register_model"
+    "register_model",
 ]
-
-
-

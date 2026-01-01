@@ -1,4 +1,5 @@
 """Data loading utilities for e-commerce product classification."""
+
 import pandas as pd
 import os
 from pathlib import Path
@@ -10,11 +11,11 @@ import tempfile
 def download_dataset(url: str, output_path: Path) -> bool:
     """
     Download dataset from URL.
-    
+
     Args:
         url: URL to download from
         output_path: Path where to save the file
-    
+
     Returns:
         True if successful, False otherwise
     """
@@ -29,18 +30,20 @@ def download_dataset(url: str, output_path: Path) -> bool:
         return False
 
 
-def load_data(file_path: Optional[str] = None, auto_generate: bool = True) -> pd.DataFrame:
+def load_data(
+    file_path: Optional[str] = None, auto_generate: bool = True
+) -> pd.DataFrame:
     """
     Load e-commerce product dataset.
-    
+
     If file_path is not provided, looks for data in data/raw/ directory.
     If no file exists, generates sample data for testing.
-    
+
     Args:
         file_path: Path to the CSV file. If None, searches in data/raw/
-    
+
     Returns:
-        DataFrame with product data including: title, seller_id, brand, 
+        DataFrame with product data including: title, seller_id, brand,
         subcategory, price, and category (target)
     """
     if file_path is None:
@@ -48,7 +51,7 @@ def load_data(file_path: Optional[str] = None, auto_generate: bool = True) -> pd
         project_root = Path(__file__).parent.parent.parent.parent
         raw_data_dir = project_root / "data" / "raw"
         raw_data_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Look for CSV files in raw data directory
         csv_files = list(raw_data_dir.glob("*.csv"))
         if csv_files:
@@ -65,8 +68,10 @@ def load_data(file_path: Optional[str] = None, auto_generate: bool = True) -> pd
                 print(f"✓ Generated and saved {len(data)} samples to {output_path}")
                 return data
             else:
-                raise FileNotFoundError(f"No dataset found in {raw_data_dir}. Set auto_generate=True to create sample data.")
-    
+                raise FileNotFoundError(
+                    f"No dataset found in {raw_data_dir}. Set auto_generate=True to create sample data."
+                )
+
     # Check if file_path is actually a directory
     if os.path.isdir(file_path):
         # If it's a directory, look for CSV files in it
@@ -86,7 +91,7 @@ def load_data(file_path: Optional[str] = None, auto_generate: bool = True) -> pd
                 return data
             else:
                 raise FileNotFoundError(f"No CSV files found in {file_path}")
-    
+
     # Check if file_path is a URL
     if file_path and file_path.startswith(("http://", "https://")):
         # Download from URL
@@ -103,7 +108,7 @@ def load_data(file_path: Optional[str] = None, auto_generate: bool = True) -> pd
                 return data
             else:
                 raise Exception(f"Failed to download dataset from {file_path}")
-    
+
     # Now check if it's a valid file
     if os.path.exists(file_path) and os.path.isfile(file_path):
         print(f"✓ Loading dataset from: {file_path}")
@@ -131,57 +136,110 @@ def load_data(file_path: Optional[str] = None, auto_generate: bool = True) -> pd
 def generate_sample_data(n_samples: int = 10000) -> pd.DataFrame:
     """
     Generate sample e-commerce product data for testing.
-    
+
     Args:
         n_samples: Number of samples to generate
-    
+
     Returns:
         DataFrame with synthetic product data
     """
     import numpy as np
-    
+
     np.random.seed(42)
-    
+
     # High-cardinality features
     seller_ids = [f"SELLER_{i:05d}" for i in range(1, 5001)]  # 5000 unique sellers
     brands = [
-        "Nike", "Adidas", "Samsung", "Apple", "Sony", "LG", "HP", "Dell",
-        "Canon", "Nikon", "Microsoft", "Google", "Amazon", "Lenovo", "Asus",
-        "Acer", "Toshiba", "Panasonic", "Philips", "Bosch", "Whirlpool",
-        "KitchenAid", "Dyson", "Shark", "Bissell", "iRobot", "Roomba",
-        "Fitbit", "Garmin", "Polar", "UnderArmour", "Puma", "Reebok",
-        "NewBalance", "Vans", "Converse", "Timberland", "Columbia", "NorthFace"
+        "Nike",
+        "Adidas",
+        "Samsung",
+        "Apple",
+        "Sony",
+        "LG",
+        "HP",
+        "Dell",
+        "Canon",
+        "Nikon",
+        "Microsoft",
+        "Google",
+        "Amazon",
+        "Lenovo",
+        "Asus",
+        "Acer",
+        "Toshiba",
+        "Panasonic",
+        "Philips",
+        "Bosch",
+        "Whirlpool",
+        "KitchenAid",
+        "Dyson",
+        "Shark",
+        "Bissell",
+        "iRobot",
+        "Roomba",
+        "Fitbit",
+        "Garmin",
+        "Polar",
+        "UnderArmour",
+        "Puma",
+        "Reebok",
+        "NewBalance",
+        "Vans",
+        "Converse",
+        "Timberland",
+        "Columbia",
+        "NorthFace",
     ]
     subcategories = [
-        "Electronics", "Clothing", "Home & Kitchen", "Sports & Outdoors",
-        "Books", "Toys & Games", "Beauty & Personal Care", "Automotive",
-        "Garden & Tools", "Pet Supplies", "Baby Products", "Office Products"
+        "Electronics",
+        "Clothing",
+        "Home & Kitchen",
+        "Sports & Outdoors",
+        "Books",
+        "Toys & Games",
+        "Beauty & Personal Care",
+        "Automotive",
+        "Garden & Tools",
+        "Pet Supplies",
+        "Baby Products",
+        "Office Products",
     ]
-    
+
     # Product categories (target variable)
     categories = [
-        "Electronics", "Clothing", "Home & Kitchen", "Sports & Outdoors",
-        "Books", "Toys & Games", "Beauty", "Automotive", "Garden",
-        "Pet Supplies", "Baby", "Office"
+        "Electronics",
+        "Clothing",
+        "Home & Kitchen",
+        "Sports & Outdoors",
+        "Books",
+        "Toys & Games",
+        "Beauty",
+        "Automotive",
+        "Garden",
+        "Pet Supplies",
+        "Baby",
+        "Office",
     ]
-    
+
     # Generate data
-    data = pd.DataFrame({
-        "product_id": [f"PROD_{i:06d}" for i in range(1, n_samples + 1)],
-        "title": [
-            f"{np.random.choice(brands)} {np.random.choice(['Pro', 'Premium', 'Classic', 'Elite', 'Standard'])} "
-            f"{np.random.choice(['Product', 'Item', 'Device', 'Tool', 'Accessory'])} "
-            f"{np.random.randint(100, 9999)}"
-            for _ in range(n_samples)
-        ],
-        "seller_id": np.random.choice(seller_ids, n_samples),
-        "brand": np.random.choice(brands, n_samples),
-        "subcategory": np.random.choice(subcategories, n_samples),
-        "price": np.random.uniform(9.99, 999.99, n_samples).round(2),
-        "rating": np.random.uniform(3.0, 5.0, n_samples).round(1),
-        "reviews_count": np.random.randint(0, 10000, n_samples),
-    })
-    
+    data = pd.DataFrame(
+        {
+            "product_id": [f"PROD_{i:06d}" for i in range(1, n_samples + 1)],
+            "title": [
+                f"{np.random.choice(brands)} {np.random.choice(['Pro', 'Premium', 'Classic', 'Elite', 'Standard'])} "
+                f"{np.random.choice(['Product', 'Item', 'Device', 'Tool', 'Accessory'])} "
+                f"{np.random.randint(100, 9999)}"
+                for _ in range(n_samples)
+            ],
+            "seller_id": np.random.choice(seller_ids, n_samples),
+            "brand": np.random.choice(brands, n_samples),
+            "subcategory": np.random.choice(subcategories, n_samples),
+            "price": np.random.uniform(9.99, 999.99, n_samples).round(2),
+            "rating": np.random.uniform(3.0, 5.0, n_samples).round(1),
+            "reviews_count": np.random.randint(0, 10000, n_samples),
+        }
+    )
+
     # Create category based on subcategory (with some noise)
     category_mapping = {
         "Electronics": "Electronics",
@@ -195,21 +253,21 @@ def generate_sample_data(n_samples: int = 10000) -> pd.DataFrame:
         "Garden & Tools": "Garden",
         "Pet Supplies": "Pet Supplies",
         "Baby Products": "Baby",
-        "Office Products": "Office"
+        "Office Products": "Office",
     }
-    
+
     data["category"] = data["subcategory"].map(category_mapping)
     # Add some noise (10% misclassification)
     noise_mask = np.random.random(n_samples) < 0.1
     data.loc[noise_mask, "category"] = np.random.choice(categories, noise_mask.sum())
-    
+
     return data
 
 
 def save_data(data: pd.DataFrame, file_path: str) -> None:
     """
     Save DataFrame to CSV file.
-    
+
     Args:
         data: DataFrame to save
         file_path: Path where to save the file
