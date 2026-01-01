@@ -56,3 +56,4 @@ The project is configured with:
 These settings ensure a smooth development experience while maintaining code quality.
 
 
+

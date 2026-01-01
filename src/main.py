@@ -90,13 +90,19 @@ def main():
         "random_state": 42
     }
     
+    # Enable design patterns
     model, train_metrics = train_model(
         X_train_final,
         y_train_final,
         X_val,
         y_val,
         config=model_config,
-        mlflow_experiment_name="product_classification"
+        mlflow_experiment_name="product_classification",
+        enable_reframing=True,  # Design Pattern: Reframing
+        enable_rebalancing=True,  # Design Pattern: Rebalancing
+        rebalancing_method="class_weight",  # Options: "class_weight", "oversample", "undersample", "SMOTE"
+        enable_checkpoints=True,  # Design Pattern: Checkpoints
+        checkpoint_dir="models/checkpoints"
     )
     
     print("-" * 60)

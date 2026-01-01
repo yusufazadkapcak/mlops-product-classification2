@@ -1,5 +1,6 @@
 """FastAPI inference API for product classification."""
 from fastapi import FastAPI, HTTPException  # type: ignore
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 from pydantic import BaseModel, Field  # type: ignore
 from typing import Optional, List
 import pandas as pd
@@ -12,6 +13,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.features.build_features import build_features
+from src.inference.drift_detection import DriftDetector, AlgorithmicFallback
 import lightgbm as lgb  # type: ignore
 
 app = FastAPI(
@@ -20,9 +22,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Add CORS middleware to allow requests from browsers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify actual origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Global variables for model and label mapping
 model = None
 label_mapping = None
+drift_detector = None
+fallback_model = None
+reference_data = None  # Store reference data for drift detection
 
 
 class ProductRequest(BaseModel):
@@ -43,9 +57,18 @@ class PredictionResponse(BaseModel):
     confidence: float = Field(..., description="Confidence score (max probability)")
 
 
-def load_model(model_path: str = "models/model.txt", label_mapping_path: str = "models/label_mapping.joblib"):
-    """Load the trained model and label mapping."""
-    global model, label_mapping
+def load_model(
+    model_path: str = "models/model.txt",
+    label_mapping_path: str = "models/label_mapping.joblib",
+    reference_data_path: Optional[str] = None,
+    fallback_model_path: Optional[str] = None
+):
+    """
+    Load the trained model, label mapping, and initialize drift detection.
+    
+    Design Pattern: Drift Detection & Algorithmic Fallback
+    """
+    global model, label_mapping, drift_detector, fallback_model, reference_data
     
     try:
         # Load LightGBM model
@@ -70,11 +93,110 @@ def load_model(model_path: str = "models/model.txt", label_mapping_path: str = "
         else:
             print("Warning: Label mapping file not found. Using default mapping.")
             label_mapping = None
+        
+        # Design Pattern: Drift Detection & Algorithmic Fallback
+        print("\n" + "="*60)
+        print("DESIGN PATTERN: Drift Detection & Algorithmic Fallback")
+        print("="*60)
+        
+        # Load reference data for drift detection
+        reference_data = None
+        if reference_data_path and Path(reference_data_path).exists():
+            reference_data = pd.read_csv(reference_data_path)
+            print(f"✓ Loaded reference data: {len(reference_data)} samples")
+        else:
+            # Try multiple locations for training data
+            possible_paths = [
+                Path("data/processed/train_features.csv"),
+                Path("data/processed/train.csv"),
+                Path("data/raw/products.csv"),
+            ]
+            
+            for train_data_path in possible_paths:
+                if train_data_path.exists():
+                    try:
+                        reference_data = pd.read_csv(train_data_path)
+                        # If it's raw data, we need to build features
+                        if "train_features" not in str(train_data_path):
+                            # This is raw data, we'll use it for concept drift only
+                            print(f"ℹ Loaded raw data: {len(reference_data)} samples (will use for concept drift detection)")
+                        else:
+                            print(f"✓ Loaded reference data from training: {len(reference_data)} samples")
+                        break
+                    except Exception as e:
+                        continue
+            
+            if reference_data is None:
+                print("ℹ Info: No reference data found. Drift detection will use confidence-based monitoring only.")
+                print("   (This is normal - API works fine without reference data)")
+        
+        # Initialize drift detector
+        if reference_data is not None:
+            # Check if reference_data has features (processed) or needs feature engineering
+            if "train_features" in str(reference_data_path) if reference_data_path else False:
+                # Already has features
+                drift_detector = DriftDetector(
+                    reference_data=reference_data,
+                    drift_threshold=0.1,
+                    window_size=100
+                )
+            else:
+                # Raw data - will use for concept drift only
+                drift_detector = DriftDetector(
+                    reference_data=None,  # Will use confidence-based detection
+                    drift_threshold=0.1,
+                    window_size=100
+                )
+            print("✓ Drift detector initialized")
+        else:
+            drift_detector = DriftDetector(drift_threshold=0.1, window_size=100)
+            print("✓ Drift detector initialized (confidence-based monitoring)")
+        
+        # Initialize fallback model
+        fallback_model = AlgorithmicFallback(
+            fallback_model_type="random_forest",
+            label_mapping=label_mapping
+        )
+        
+        # Load or train fallback model
+        if fallback_model_path and Path(fallback_model_path).exists():
+            fallback_model.load_fallback_model(fallback_model_path)
+            print("✓ Fallback model loaded from file")
+        else:
+            # Try to train fallback model if training data available
+            if reference_data is not None and "category" in reference_data.columns:
+                try:
+                    # Check if data has features or needs feature engineering
+                    if "train_features" in str(reference_data_path) if reference_data_path else False:
+                        # Has features already
+                        X_fallback = reference_data.drop(columns=["category"])
+                    else:
+                        # Need to build features
+                        X_fallback = build_features(reference_data)
+                    
+                    y_fallback = reference_data["category"]
+                    fallback_model.train_fallback_model(X_fallback, y_fallback)
+                    # Save fallback model
+                    fallback_path = Path("models/fallback_model.joblib")
+                    fallback_model.save_fallback_model(str(fallback_path))
+                    print("✓ Fallback model trained and saved")
+                except Exception as e:
+                    print(f"ℹ Info: Could not train fallback model: {e}")
+                    print("   (API will work with main model only)")
+            else:
+                print("ℹ Info: Fallback model not available (optional feature)")
+                print("   (API works fine with main model only)")
+        
+        print("="*60)
             
     except Exception as e:
         print(f"Error loading model: {e}")
+        import traceback
+        traceback.print_exc()
         model = None
         label_mapping = None
+        drift_detector = None
+        fallback_model = None
 
 
 @app.on_event("startup")
@@ -110,13 +232,17 @@ async def predict(request: ProductRequest):
     """
     Predict product category for a single product.
     
+    Design Pattern: Drift Detection & Algorithmic Fallback
+    - Detects data drift
+    - Falls back to simpler algorithm if drift detected
+    
     Args:
         request: Product information
     
     Returns:
         Predicted category and probabilities
     """
-    if model is None:
+    if model is None and fallback_model is None:
         raise HTTPException(status_code=503, detail="Model not loaded. Please train a model first.")
     
     try:
@@ -134,31 +260,114 @@ async def predict(request: ProductRequest):
         # Build features
         features = build_features(data)
         
+        # Design Pattern: Drift Detection
+        use_fallback = False
+        drift_info = {}
+        
+        if drift_detector is not None:
+            # Add to drift detection window
+            drift_detector.add_request(features)
+            
+            # Check for drift
+            drift_result = drift_detector.detect_data_drift(features)
+            drift_info = drift_result
+            
+            if drift_result.get("drift_detected", False):
+                print(f"⚠️  Data drift detected! Score: {drift_result.get('drift_score', 0):.3f}")
+                use_fallback = True
+        
         # Make prediction
-        predictions = model.predict(features, num_iteration=model.best_iteration)
-        predicted_class_idx = np.argmax(predictions[0])
-        confidence = float(np.max(predictions[0]))
-        
-        # Map to label
-        if label_mapping and "idx_to_label" in label_mapping:
-            predicted_category = label_mapping["idx_to_label"][predicted_class_idx]
-            # Create probabilities dict
-            probabilities = {
-                label_mapping["idx_to_label"][i]: float(prob)
-                for i, prob in enumerate(predictions[0])
-            }
+        if use_fallback and fallback_model is not None:
+            # Use fallback model
+            print("Using fallback model due to drift detection")
+            fallback_pred, fallback_conf = fallback_model.predict_fallback(features)
+            predicted_category = str(fallback_pred[0])
+            confidence = float(fallback_conf[0])
+            probabilities = {predicted_category: confidence}
+        elif model is not None:
+            # Use main model
+            predictions = model.predict(features, num_iteration=model.best_iteration)
+            predicted_class_idx = np.argmax(predictions[0])
+            confidence = float(np.max(predictions[0]))
+            
+            # Check concept drift (low confidence)
+            if drift_detector is not None:
+                concept_drift = drift_detector.detect_concept_drift(
+                    predictions,
+                    np.array([confidence]),
+                    threshold=0.5
+                )
+                if concept_drift.get("drift_detected", False):
+                    print(f"⚠️  Concept drift detected! Avg confidence: {concept_drift.get('avg_confidence', 0):.3f}")
+                    # Use fallback if confidence is too low
+                    if fallback_model is not None and confidence < 0.5:
+                        print("Using fallback model due to low confidence")
+                        fallback_pred, fallback_conf = fallback_model.predict_fallback(features)
+                        predicted_category = str(fallback_pred[0])
+                        confidence = float(fallback_conf[0])
+                        probabilities = {predicted_category: confidence}
+                    else:
+                        # Use main model but with lower confidence
+                        if label_mapping and "idx_to_label" in label_mapping:
+                            predicted_category = label_mapping["idx_to_label"][predicted_class_idx]
+                            probabilities = {
+                                label_mapping["idx_to_label"][i]: float(prob)
+                                for i, prob in enumerate(predictions[0])
+                            }
+                        else:
+                            predicted_category = f"Category_{predicted_class_idx}"
+                            probabilities = {f"Category_{i}": float(prob) for i, prob in enumerate(predictions[0])}
+                else:
+                    # Normal prediction
+                    if label_mapping and "idx_to_label" in label_mapping:
+                        predicted_category = label_mapping["idx_to_label"][predicted_class_idx]
+                        probabilities = {
+                            label_mapping["idx_to_label"][i]: float(prob)
+                            for i, prob in enumerate(predictions[0])
+                        }
+                    else:
+                        predicted_category = f"Category_{predicted_class_idx}"
+                        probabilities = {f"Category_{i}": float(prob) for i, prob in enumerate(predictions[0])}
+            else:
+                # No drift detection, use main model
+                if label_mapping and "idx_to_label" in label_mapping:
+                    predicted_category = label_mapping["idx_to_label"][predicted_class_idx]
+                    probabilities = {
+                        label_mapping["idx_to_label"][i]: float(prob)
+                        for i, prob in enumerate(predictions[0])
+                    }
+                else:
+                    predicted_category = f"Category_{predicted_class_idx}"
+                    probabilities = {f"Category_{i}": float(prob) for i, prob in enumerate(predictions[0])}
         else:
-            # Fallback: use index as category
-            predicted_category = f"Category_{predicted_class_idx}"
-            probabilities = {f"Category_{i}": float(prob) for i, prob in enumerate(predictions[0])}
+            # Ultimate fallback
+            predicted_category = "Unknown"
+            confidence = 0.5
+            probabilities = {"Unknown": 0.5}
         
-        return PredictionResponse(
+        response = PredictionResponse(
             category=predicted_category,
             probabilities=probabilities,
             confidence=confidence
         )
         
+        # Add drift info to response (if needed, could extend response model)
+        return response
+        
     except Exception as e:
+        # If main model fails, try fallback
+        if fallback_model is not None:
+            try:
+                print(f"Main model failed: {e}, trying fallback")
+                features = build_features(data)
+                fallback_pred, fallback_conf = fallback_model.predict_fallback(features)
+                return PredictionResponse(
+                    category=str(fallback_pred[0]),
+                    probabilities={str(fallback_pred[0]): float(fallback_conf[0])},
+                    confidence=float(fallback_conf[0])
+                )
+            except Exception as fallback_error:
+                raise HTTPException(status_code=500, detail=f"Prediction error (fallback also failed): {str(fallback_error)}")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 

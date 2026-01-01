@@ -49,3 +49,4 @@ echo ""
 echo "Image URI: $ECR_REPO:latest"
 echo ""
 
+

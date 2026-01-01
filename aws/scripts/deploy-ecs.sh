@@ -106,3 +106,4 @@ echo "  aws logs tail $MLFLOW_LOG_GROUP --follow --region $AWS_REGION"
 echo "  aws logs tail $API_LOG_GROUP --follow --region $AWS_REGION"
 echo ""
 
+

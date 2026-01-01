@@ -17,6 +17,15 @@ from typing import Dict, Any, Tuple, Optional
 # Import actual MLflow package
 import mlflow  # type: ignore
 
+# Import design patterns
+from src.data.rebalancing import (
+    check_class_imbalance,
+    reframe_problem,
+    rebalance_data,
+    calculate_class_weights
+)
+from src.models.checkpoints import ModelCheckpoint
+
 # Try to import mlflow.lightgbm, use generic logging if not available
 try:
     import mlflow.lightgbm  # type: ignore
@@ -31,7 +40,12 @@ def train_model(
     X_val: pd.DataFrame = None,
     y_val: pd.Series = None,
     config: Dict[str, Any] = None,
-    mlflow_experiment_name: str = "product_classification"
+    mlflow_experiment_name: str = "product_classification",
+    enable_reframing: bool = True,
+    enable_rebalancing: bool = True,
+    rebalancing_method: str = "class_weight",
+    enable_checkpoints: bool = True,
+    checkpoint_dir: str = "models/checkpoints"
 ) -> Tuple[lgb.Booster, Dict[str, float]]:
     """
     Train LightGBM model for product classification.
@@ -43,11 +57,43 @@ def train_model(
         y_val: Validation target (optional)
         config: Model configuration dictionary
         mlflow_experiment_name: MLflow experiment name
+        enable_reframing: Enable reframing pattern (combine minority classes)
+        enable_rebalancing: Enable rebalancing pattern (handle class imbalance)
+        rebalancing_method: Rebalancing method ('class_weight', 'oversample', 'undersample', 'SMOTE')
+        enable_checkpoints: Enable checkpoint pattern (save model during training)
+        checkpoint_dir: Directory for checkpoints
     
     Returns:
         Tuple of (trained_model, metrics_dict)
     """
-    # Get number of unique classes and create label mapping
+    # Design Pattern: Reframing & Rebalancing
+    print("\n" + "="*60)
+    print("DESIGN PATTERN: Reframing & Rebalancing")
+    print("="*60)
+    
+    # Check for class imbalance
+    imbalance_info = check_class_imbalance(y_train)
+    print(f"Class imbalance check:")
+    print(f"  Is imbalanced: {imbalance_info['is_imbalanced']}")
+    print(f"  Imbalance ratio: {imbalance_info['imbalance_ratio']:.3f}")
+    print(f"  Class distribution: {imbalance_info['class_distribution']}")
+    
+    # Reframing: Combine minority classes if needed
+    if enable_reframing and imbalance_info['is_imbalanced']:
+        X_train, y_train = reframe_problem(X_train, y_train, method="combine_minority")
+        if y_val is not None:
+            # Reframe validation set too
+            _, y_val = reframe_problem(X_val, y_val, method="combine_minority")
+    
+    # Rebalancing: Handle class imbalance
+    if enable_rebalancing and imbalance_info['is_imbalanced']:
+        X_train, y_train = rebalance_data(
+            X_train, y_train,
+            method=rebalancing_method,
+            random_state=42
+        )
+    
+    # Get number of unique classes and create label mapping (after reframing)
     class_labels = sorted(y_train.unique())
     n_classes = len(class_labels)
     
@@ -98,6 +144,31 @@ def train_model(
         if "objective" not in config:
             config["objective"] = "multiclass"
     
+    # Design Pattern: Checkpoints
+    checkpoint_manager = None
+    if enable_checkpoints:
+        checkpoint_manager = ModelCheckpoint(
+            checkpoint_dir=checkpoint_dir,
+            save_freq=10,
+            keep_best=True,
+            max_checkpoints=5
+        )
+        print("\n" + "="*60)
+        print("DESIGN PATTERN: Checkpoints")
+        print("="*60)
+        print(f"Checkpoint directory: {checkpoint_dir}")
+        print(f"Checkpoints enabled: Save every 10 iterations")
+    
+    # Calculate class weights for rebalancing
+    class_weights = None
+    if enable_rebalancing and rebalancing_method == "class_weight":
+        class_weights = calculate_class_weights(y_train)
+        print(f"\nClass weights: {class_weights}")
+        # Convert to LightGBM format (list of weights per class)
+        weight_list = [class_weights[label] for label in sorted(class_labels)]
+        # LightGBM uses class_weight parameter
+        config["class_weight"] = weight_list
+    
     # Set up MLflow
     mlflow.set_experiment(mlflow_experiment_name)
     
@@ -107,6 +178,14 @@ def train_model(
         mlflow.log_param("n_features", X_train.shape[1])
         mlflow.log_param("n_samples", len(X_train))
         mlflow.log_param("n_classes", n_classes)
+        mlflow.log_param("reframing_enabled", enable_reframing)
+        mlflow.log_param("rebalancing_enabled", enable_rebalancing)
+        mlflow.log_param("rebalancing_method", rebalancing_method)
+        mlflow.log_param("checkpoints_enabled", enable_checkpoints)
+        
+        # Log imbalance info
+        mlflow.log_metric("imbalance_ratio", imbalance_info['imbalance_ratio'])
+        mlflow.log_param("is_imbalanced", imbalance_info['is_imbalanced'])
         
         # Prepare data for LightGBM - ensure all features are numeric
         # Convert to numeric and fill any NaN
@@ -134,14 +213,15 @@ def train_model(
             val_data = None
             callbacks = [lgb.log_evaluation(period=10)]
         
-        # Train model
+        # Train model with checkpointing
         model = lgb.train(
             config,
             train_data,
             num_boost_round=100,
             valid_sets=[train_data] + ([val_data] if val_data else []),
             valid_names=["train"] + (["val"] if val_data else []),
-            callbacks=callbacks
+            callbacks=callbacks,
+            init_model=None  # Could load from checkpoint here
         )
         
         # Make predictions (use cleaned data)
@@ -188,6 +268,17 @@ def train_model(
             
             metrics.update(val_metrics)
             mlflow.log_metrics(val_metrics)
+        
+        # Save checkpoint after training (with final metrics)
+        if enable_checkpoints and checkpoint_manager:
+            label_mapping_dict = {"label_to_idx": label_to_idx, "idx_to_label": idx_to_label}
+            checkpoint_manager.save_checkpoint(
+                model=model,
+                iteration=model.best_iteration or 100,
+                metrics=metrics,
+                label_mapping=label_mapping_dict,
+                is_best=True  # Mark as best for now
+            )
         
         # Log model
         if HAS_LIGHTGBM_SUPPORT:
