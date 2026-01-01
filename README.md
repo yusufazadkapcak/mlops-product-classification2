@@ -1,3 +1,12 @@
+---
+title: MLOps Product Classification
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8000
+---
+
 # MLOps Product Classification Project
 
 A complete MLOps pipeline for e-commerce product category prediction using machine learning. This project demonstrates best practices in MLOps including data preprocessing, feature engineering, model training, experiment tracking, orchestration, and deployment.
