@@ -1,23 +1,24 @@
 """Prefect orchestration pipeline for product classification."""
 
-from prefect import flow, task  # type: ignore
-import pandas as pd
-from pathlib import Path
-from typing import Dict, Any
 import sys
+from pathlib import Path
+from typing import Any, Dict
+
+import pandas as pd
+from prefect import flow, task  # type: ignore
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.data.load import load_data, save_data
-from src.data.preprocess import preprocess_data, split_data
-from src.features.build_features import build_features
-from src.models.train import train_model, evaluate_model
-from src.tracking_utils.tracking import setup_mlflow, register_model
+import joblib
 
 # Import actual MLflow package
 import mlflow  # type: ignore
-import joblib
+from src.data.load import load_data, save_data
+from src.data.preprocess import preprocess_data, split_data
+from src.features.build_features import build_features
+from src.models.train import evaluate_model, train_model
+from src.tracking_utils.tracking import register_model, setup_mlflow
 
 
 @task(name="load_raw_data", log_prints=True)

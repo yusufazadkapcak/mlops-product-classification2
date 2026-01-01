@@ -1,21 +1,23 @@
 """FastAPI inference API for product classification."""
 
+import sys
+from pathlib import Path
+from typing import List, Optional
+
+import joblib
+import numpy as np
+import pandas as pd
 from fastapi import FastAPI, HTTPException  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 from pydantic import BaseModel, Field  # type: ignore
-from typing import Optional, List
-import pandas as pd
-import numpy as np
-import joblib
-from pathlib import Path
-import sys
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.features.build_features import build_features
-from src.inference.drift_detection import DriftDetector, AlgorithmicFallback
 import lightgbm as lgb  # type: ignore
+
+from src.features.build_features import build_features
+from src.inference.drift_detection import AlgorithmicFallback, DriftDetector
 
 app = FastAPI(
     title="Product Classification API",
@@ -491,9 +493,10 @@ async def predict_batch(requests: List[ProductRequest]):
 
 
 if __name__ == "__main__":
-    import uvicorn  # type: ignore
-    import sys
     import os
+    import sys
+
+    import uvicorn  # type: ignore
 
     # Use 127.0.0.1 on Windows to avoid WinError 10022
     # For cloud deployment, use 0.0.0.0 and PORT from environment

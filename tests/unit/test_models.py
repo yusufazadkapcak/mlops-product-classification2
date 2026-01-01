@@ -1,19 +1,21 @@
 """Unit tests for model training."""
 
-import unittest
 import sys
+import unittest
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+import lightgbm as lgb
 
 from src.data.load import generate_sample_data
 from src.data.preprocess import preprocess_data, split_data
 from src.features.build_features import build_features
 from src.models.train import train_model
-import lightgbm as lgb
 
 
 class TestModels(unittest.TestCase):

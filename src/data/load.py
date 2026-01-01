@@ -1,11 +1,12 @@
 """Data loading utilities for e-commerce product classification."""
 
-import pandas as pd
 import os
+import tempfile
+import urllib.request
 from pathlib import Path
 from typing import Optional
-import urllib.request
-import tempfile
+
+import pandas as pd
 
 
 def download_dataset(url: str, output_path: Path) -> bool:

@@ -1,15 +1,16 @@
 """Unit tests for data loading and preprocessing."""
 
-import unittest
 import sys
+import unittest
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.data.load import load_data, generate_sample_data
-from src.data.preprocess import preprocess_data, split_data
 import pandas as pd
+
+from src.data.load import generate_sample_data, load_data
+from src.data.preprocess import preprocess_data, split_data
 
 
 class TestData(unittest.TestCase):

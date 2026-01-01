@@ -2,8 +2,8 @@
 
 # Import the actual MLflow package (not the local module)
 import sys
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 # CRITICAL: Remove any local mlflow modules to prevent circular imports
 # This must happen BEFORE any mlflow import
@@ -93,9 +93,10 @@ def log_model(model: Any, model_name: str) -> None:
         mlflow.lightgbm.log_model(model, model_name)
     else:
         # Fallback to generic model logging
-        import joblib
-        import tempfile
         import os
+        import tempfile
+
+        import joblib
 
         with tempfile.TemporaryDirectory() as tmpdir:
             model_path = os.path.join(tmpdir, f"{model_name}.joblib")

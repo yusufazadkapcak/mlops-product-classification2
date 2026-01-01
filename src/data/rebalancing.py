@@ -1,9 +1,10 @@
 """Reframing & Rebalancing pattern for handling class imbalance."""
 
-import pandas as pd
-import numpy as np
-from typing import Tuple, Dict, Any
 from collections import Counter
+from typing import Any, Dict, Tuple
+
+import numpy as np
+import pandas as pd
 
 
 def check_class_imbalance(y: pd.Series, threshold: float = 0.5) -> Dict[str, Any]:

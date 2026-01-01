@@ -1,8 +1,9 @@
 """Data preprocessing utilities for e-commerce product classification."""
 
-import pandas as pd
-import numpy as np
 from typing import Tuple
+
+import numpy as np
+import pandas as pd
 
 
 def preprocess_data(raw_data: pd.DataFrame) -> pd.DataFrame:

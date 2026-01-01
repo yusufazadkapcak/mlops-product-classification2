@@ -1,14 +1,15 @@
 """Drift Detection & Algorithmic Fallback pattern for serving."""
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, Optional, Tuple
+import warnings
 from collections import deque
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
+
 import joblib
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier  # type: ignore
 from sklearn.naive_bayes import MultinomialNB  # type: ignore
-import warnings
 
 warnings.filterwarnings("ignore")
 

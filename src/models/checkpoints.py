@@ -1,9 +1,10 @@
 """Checkpoints pattern for model resilience during training."""
 
 import os
-import joblib
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import joblib
 import lightgbm as lgb  # type: ignore
 import pandas as pd
 

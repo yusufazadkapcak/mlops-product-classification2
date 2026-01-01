@@ -1,31 +1,23 @@
 """Model training with LightGBM and MLflow tracking."""
 
-import pandas as pd
-import numpy as np
-import lightgbm as lgb  # type: ignore
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    classification_report,
-    confusion_matrix,
-)
-import joblib
 import os
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
+import joblib
+import lightgbm as lgb  # type: ignore
+import numpy as np
+import pandas as pd
+from sklearn.metrics import (accuracy_score, classification_report,
+                             confusion_matrix, f1_score, precision_score,
+                             recall_score)
 
 # Import actual MLflow package
 import mlflow  # type: ignore
-
 # Import design patterns
-from src.data.rebalancing import (
-    check_class_imbalance,
-    reframe_problem,
-    rebalance_data,
-    calculate_class_weights,
-)
+from src.data.rebalancing import (calculate_class_weights,
+                                  check_class_imbalance, rebalance_data,
+                                  reframe_problem)
 from src.models.checkpoints import ModelCheckpoint
 
 # Try to import mlflow.lightgbm, use generic logging if not available

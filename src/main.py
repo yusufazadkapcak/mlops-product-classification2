@@ -1,7 +1,7 @@
 """Main entry point for training pipeline."""
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add project root to path
@@ -9,15 +9,16 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 os.environ["PYTHONPATH"] = str(project_root)
 
-# Import modules
-from src.data.load import load_data, generate_sample_data
-from src.data.preprocess import preprocess_data, split_data
-from src.features.build_features import build_features
-from src.models.train import train_model, evaluate_model
-from src.tracking_utils.tracking import setup_mlflow
-import mlflow  # type: ignore
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+import mlflow  # type: ignore
+# Import modules
+from src.data.load import generate_sample_data, load_data
+from src.data.preprocess import preprocess_data, split_data
+from src.features.build_features import build_features
+from src.models.train import evaluate_model, train_model
+from src.tracking_utils.tracking import setup_mlflow
 
 
 def main():

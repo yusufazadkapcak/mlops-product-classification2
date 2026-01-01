@@ -1,19 +1,20 @@
 """Integration tests for the full pipeline."""
 
-import unittest
-import sys
-from pathlib import Path
-import tempfile
 import shutil
+import sys
+import tempfile
+import unittest
+from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+import pandas as pd
+
 from src.data.load import generate_sample_data
 from src.data.preprocess import preprocess_data
 from src.features.build_features import build_features
-from src.models.train import train_model, evaluate_model
-import pandas as pd
+from src.models.train import evaluate_model, train_model
 
 
 class TestPipeline(unittest.TestCase):

@@ -13,8 +13,8 @@ class ModelPredictor:
 
 
 if __name__ == "__main__":
-    import sys
     import json
+    import sys
 
     # Load input data from JSON file
     input_file = sys.argv[1]
