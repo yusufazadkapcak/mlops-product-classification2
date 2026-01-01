@@ -267,7 +267,7 @@ def calculate_class_weights(y: pd.Series) -> Dict[str, float]:
     classes = sorted(y.unique())
     class_weights = compute_class_weight(
         'balanced',
-        classes=classes,
+        classes=np.array(classes),
         y=y
     )
     
