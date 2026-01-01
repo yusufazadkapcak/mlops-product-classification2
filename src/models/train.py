@@ -81,9 +81,9 @@ def train_model(
     # Reframing: Combine minority classes if needed
     if enable_reframing and imbalance_info['is_imbalanced']:
         X_train, y_train = reframe_problem(X_train, y_train, method="combine_minority")
-        if y_val is not None:
+       # if y_val is not None:
             # Reframe validation set too
-            _, y_val = reframe_problem(X_val, y_val, method="combine_minority")
+          #  _, y_val = reframe_problem(X_val, y_val, method="combine_minority")
     
     # Rebalancing: Handle class imbalance
     if enable_rebalancing and imbalance_info['is_imbalanced']:
