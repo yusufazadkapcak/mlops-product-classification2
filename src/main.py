@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 import mlflow  # type: ignore
+
 # Import modules
 from src.data.load import generate_sample_data, load_data
 from src.data.preprocess import preprocess_data, split_data
